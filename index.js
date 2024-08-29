@@ -1,9 +1,10 @@
-const { Telegraf, Markup } = require('telegraf');
+const { Telegraf } = require('telegraf');
+const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
 // Initialize the bot with your API token
-const bot = new Telegraf('7264420155:AAGdTFT1HQZ7FABKhQNg-cF9egLmuCmZDco');
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // Load or create the user data file
 const dataPath = path.join(__dirname, 'data', 'users.json');
@@ -21,6 +22,29 @@ function saveUserData() {
     fs.writeFileSync(dataPath, JSON.stringify(users, null, 2));
 }
 
+// Set up webhook URL
+const setWebhook = async () => {
+    const webhookUrl = `https://${process.env.VERCEL_URL}/api/webhook`;
+
+    try {
+        const url = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook`;
+        const response = await fetch(`${url}?url=${webhookUrl}`);
+        const result = await response.json();
+        if (result.ok) {
+            console.log('Webhook set successfully!');
+        } else {
+            console.error('Failed to set webhook:', result.description);
+        }
+    } catch (error) {
+        console.error('Error setting webhook:', error);
+    }
+};
+
+// Set the webhook when the app starts
+setWebhook();
+
+// Define your bot commands and handlers here
+
 // Main menu with buttons
 const mainMenu = Markup.inlineKeyboard([
     [Markup.button.callback('Join Community', 'join_community')],
@@ -37,7 +61,8 @@ bot.start((ctx) => {
             points: 10, // Start with 10 points
             referrals: 0,
             wallet: null,
-            username: ctx.from.username || ctx.from.id.toString()
+            username: ctx.from.username || ctx.from.id.toString(),
+            waitingForWallet: false
         };
         saveUserData();
     } else {
@@ -99,11 +124,15 @@ bot.on('text', async (ctx) => {
     if (users[userId] && users[userId].waitingForWallet) {
         const wallet = ctx.message.text.trim();
         if (/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
-            users[userId].wallet = wallet;
-            users[userId].points = (users[userId].points || 0) + 20; // Add 20 points for registering wallet
-            users[userId].waitingForWallet = false; // Reset waiting state
-            saveUserData();
-            await ctx.reply('Your Base wallet address has been successfully registered and you have been awarded 20 points.');
+            if (users[userId].wallet) {
+                await ctx.reply('You have already registered your wallet.');
+            } else {
+                users[userId].wallet = wallet;
+                users[userId].points = (users[userId].points || 0) + 20; // Add 20 points for registering wallet
+                users[userId].waitingForWallet = false; // Reset waiting state
+                saveUserData();
+                await ctx.reply('Your Base wallet address has been successfully registered and you have been awarded 20 points.');
+            }
         } else {
             await ctx.reply('Invalid wallet address. Please make sure it is in the correct format and try again.');
         }
@@ -121,7 +150,7 @@ bot.on('text', (ctx) => {
     }
 });
 
-// Post leaderboard to chat every 1 minute
+// Post leaderboard to chat every 15 minutes
 setInterval(() => {
     let leaderboard = '🏆 Top 100 Referrers 🏆\n\n';
     const sortedUsers = Object.entries(users)
@@ -132,8 +161,9 @@ setInterval(() => {
         leaderboard += `${index + 1}. ${user.username}: ${user.points} points\n`;
     });
 
-    bot.telegram.sendMessage('-1002184600685', leaderboard); // Use your group chat ID
-}, 1800000); // 15 minute in milliseconds
+    bot.telegram.sendMessage(process.env.CHAT_ID, leaderboard); // Use your group chat ID
+}, 900000); // 15 minutes in milliseconds
 
 // Launch the bot
 bot.launch();
+
