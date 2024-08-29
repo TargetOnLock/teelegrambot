@@ -1,0 +1,28 @@
+{
+  "6798650387": {
+    "referrals": 0,
+    "wallet": "0x3dE70b94081cCf25ae6C3010e8Ec18aE0Bb5Ed20",
+    "username": "RageXXXLife",
+    "points": 30,
+    "waitingForWallet": false
+  },
+  "7070254424": {
+    "username": "OldGloryPatriot",
+    "referrals": 0,
+    "wallet": "0x3dE70b94081cCf25ae6C3010e8Ec18aE0Bb5Ed20",
+    "points": 40,
+    "waitingForWallet": false
+  },
+  "7448913040": {
+    "username": "CryptoXFury",
+    "referrals": 0,
+    "wallet": null
+  },
+  "7021281321": {
+    "points": 30,
+    "referrals": 0,
+    "wallet": null,
+    "username": "Dongfather",
+    "waitingForWallet": true
+  }
+}
